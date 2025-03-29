@@ -149,7 +149,7 @@ export default {
       }
     },
     logout() {
-      sessionStorage.removeItem("userToken");
+      sessionStorage.removeItem("token");
       this.userRole = null;
       this.$router.push("/login");
     },

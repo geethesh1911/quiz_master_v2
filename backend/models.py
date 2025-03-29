@@ -59,4 +59,3 @@ class Score(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow) 
     total_scored = db.Column(db.Integer)
     total_questions = db.Column(db.Integer)
-    quiz_id = db.Column(db.Integer, db.ForeignKey('quiz.id'), nullable=False) 

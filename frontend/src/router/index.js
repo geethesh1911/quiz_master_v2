@@ -6,9 +6,9 @@ import AdminDashboard from "@/views/AdminDashboard.vue";
 import StudentDashboard from "@/views/StudentDashboard.vue";
 import MainNavbar from "@/components/MainNavbar.vue";
 import AdminQuizzes from "@/views/AdminQuizzes.vue";
+import StudentExamPortal from "@/views/StudentExamPortal.vue";
 Vue.use(VueRouter);
 
-// Register the MainNavbar component globally
 Vue.component("MainNavbar", MainNavbar);
 
 const routes = [
@@ -25,6 +25,19 @@ const routes = [
   { path: "/admin-dashboard", component: AdminDashboard },
   { path: "/student-dashboard", component: StudentDashboard },
   { path: "/admin-quizzes", component: AdminQuizzes },
+  // router.js
+  {
+    path: "/student/exam/:quizId",
+    name: "StudentExamPortal",
+    component: StudentExamPortal,
+    meta: { requiresAuth: true, role: "student" },
+  },
+  {
+    path: "/student/quiz-result/:quizId",
+    name: "ExamResult",
+    component: () => import("@/views/ExamResult.vue"),
+    meta: { requiresAuth: true, role: "student" },
+  },
 ];
 
 const router = new VueRouter({

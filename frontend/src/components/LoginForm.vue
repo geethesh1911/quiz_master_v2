@@ -54,7 +54,7 @@ export default {
     return {
       email: "",
       password: "",
-      loading: false, 
+      loading: false,
     };
   },
   methods: {
@@ -76,7 +76,7 @@ export default {
             email: this.email,
             password: this.password,
           }),
-          credentials: "include", 
+          credentials: "include",
         });
 
         const result = await response.json();
@@ -102,7 +102,7 @@ export default {
         console.error("Error:", error);
         alert("An error occurred");
       } finally {
-        this.loading = false; 
+        this.loading = false;
       }
     },
   },

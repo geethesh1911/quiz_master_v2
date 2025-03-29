@@ -4,6 +4,7 @@ from models import db, User, Quiz, Question, Score, Chapter, Subject
 import jwt
 from functools import wraps
 from datetime import datetime
+from sqlalchemy.orm import joinedload
 
 student_bp = Blueprint("student", __name__, url_prefix="/student")
 
@@ -38,56 +39,58 @@ def student_required(f):
 # --- Student Routes --- #
 
 # Get available quizzes (student version)
+# In get_available_quizzes route, add date_of_quiz:
 @student_bp.route("/quizzes/available", methods=["GET"])
 @student_required
 def get_available_quizzes():
     quizzes = Quiz.query.filter(Quiz.date_of_quiz <= datetime.utcnow()).all()
     return jsonify([{
         "id": q.id,
+        "date_of_quiz": q.date_of_quiz.isoformat(), 
         "chapter": q.chapter.name,
         "subject": q.chapter.subject.name,
         "duration": q.time_duration,
         "total_questions": len(q.questions)
     } for q in quizzes])
 
-# Start a quiz (returns questions without answers)
-@student_bp.route("/quizzes/<int:quiz_id>/start", methods=["GET"])
-@student_required
-def start_quiz(quiz_id):
-    quiz = Quiz.query.get_or_404(quiz_id)
-    return jsonify([{
-        "id": q.id,
-        "question": q.question_text,
-        "options": [q.option_1, q.option_2, q.option_3, q.option_4]
-    } for q in quiz.questions])
 
 # Submit quiz answers
 @student_bp.route("/quizzes/<int:quiz_id>/submit", methods=["POST"])
 @student_required
 def submit_quiz(quiz_id):
-    data = request.get_json()
-    user_id = verify_token(request.headers['Authorization'])["user_id"]
-    
-    if Score.query.filter_by(user_id=user_id, quiz_id=quiz_id).first():
-        return jsonify({"error": "Already submitted"}), 400
+    try:
+        data = request.get_json()
+        user_id = verify_token(request.headers['Authorization'])["user_id"]
+        
+        if Score.query.filter_by(user_id=user_id, quiz_id=quiz_id).first():
+            return jsonify({"error": "Already submitted"}), 400
 
-    questions = Question.query.filter_by(quiz_id=quiz_id).all()
-    correct = sum(1 for q in questions if str(data.get(str(q.id))) == str(q.correct_option))
+        questions = Question.query.filter_by(quiz_id=quiz_id).all()
+        correct = sum(
+            1 for q in questions 
+            if str(data['answers'].get(str(q.id))) == str(q.correct_option)
+        )
 
-    score = Score(
-        user_id=user_id,
-        quiz_id=quiz_id,
-        total_scored=correct,
-        total_questions=len(questions)
-    )
-    db.session.add(score)
-    db.session.commit()
+        score = Score(
+            user_id=user_id,
+            quiz_id=quiz_id,
+            total_scored=correct,
+            total_questions=len(questions)
+        )
+        
+        db.session.add(score)
+        db.session.commit()
 
-    return jsonify({
-        "score": correct,
-        "total": len(questions),
-        "percentage": round((correct / len(questions)) * 100, 2)
-    })
+        return jsonify({
+            "score": correct,
+            "total": len(questions),
+            "percentage": round((correct / len(questions)) * 100, 2)
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Submission error: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500
 
 @student_bp.route("/results", methods=["GET"])
 @student_required
@@ -100,6 +103,28 @@ def get_results():
         "score": f"{s.total_scored}/{s.total_questions}",
         "date": s.timestamp.isoformat()
     } for s in scores])
+
+@student_bp.route("/results/<int:quiz_id>", methods=["GET"])
+@student_required
+def get_single_result(quiz_id):
+    user_id = verify_token(request.headers['Authorization'])["user_id"]
+    result = Score.query.options(
+        joinedload(Score.quiz).joinedload(Quiz.chapter)
+    ).filter_by(
+        user_id=user_id,
+        quiz_id=quiz_id
+    ).first_or_404()
+
+    return jsonify({
+        "quiz": {
+            "chapter": {
+                "name": result.quiz.chapter.name
+            }
+        },
+        "total_scored": result.total_scored,
+        "total_questions": result.total_questions,
+        "timestamp": result.timestamp.isoformat()
+    })
 
 @student_bp.route("/profile", methods=["GET", "PUT"])
 @student_required
@@ -122,3 +147,17 @@ def profile():
             user.dob = datetime.fromisoformat(data['dob'])
         db.session.commit()
         return jsonify({"message": "Profile updated"})
+    
+
+@student_bp.route("/quizzes/<int:quiz_id>/start", methods=["GET"])
+@student_required
+def start_quiz(quiz_id):
+    quiz = Quiz.query.get_or_404(quiz_id)
+    return jsonify({
+        "questions": [{
+            "id": q.id,
+            "question": q.question_text,
+            "options": [q.option_1, q.option_2, q.option_3, q.option_4]
+        } for q in quiz.questions],
+        "duration": quiz.time_duration  # Add this
+    })

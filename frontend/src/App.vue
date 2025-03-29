@@ -6,7 +6,7 @@
 </template>
 
 <script>
-import MainNavbar from "@/components/MainNavbar.vue"; // Adjust the path if needed
+import MainNavbar from "@/components/MainNavbar.vue";
 
 export default {
   components: {
