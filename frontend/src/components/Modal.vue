@@ -9,7 +9,7 @@
 
 <script>
 export default {
-  name: "BaseModal", // Changed to multi-word component name
+  name: "BaseModal",
 };
 </script>
 

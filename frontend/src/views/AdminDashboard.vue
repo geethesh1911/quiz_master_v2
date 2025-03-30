@@ -188,6 +188,12 @@ export default {
     };
   },
   async created() {
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith("exam_")) {
+        localStorage.removeItem(key);
+      }
+    });
+
     await this.fetchSubjects();
   },
   methods: {

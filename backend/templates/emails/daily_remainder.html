@@ -1,0 +1,10 @@
+<p>Hi {{ user.username }},</p>
+{% if new_quizzes %}
+  <p>New quizzes available:</p>
+  <ul>
+    {% for quiz in new_quizzes %}
+      <li>{{ quiz.chapter.subject.name }} - {{ quiz.chapter.name }}</li>
+    {% endfor %}
+  </ul>
+{% endif %}
+<p>Visit your dashboard: <a href="http://localhost:8080/student-dashboard">Dashboard</a></p>

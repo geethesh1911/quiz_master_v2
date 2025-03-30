@@ -1,0 +1,14 @@
+<h2>Your {{ month }} Quiz Report</h2>
+<p>Quizzes taken: {{ total_quizzes }}</p>
+<p>Average score: {{ avg_score }}%</p>
+
+<table>
+  <tr><th>Quiz</th><th>Score</th><th>Date</th></tr>
+  {% for score in scores %}
+    <tr>
+      <td>{{ score.quiz.chapter.name }}</td>
+      <td>{{ score.total_scored }}/{{ score.total_questions }}</td>
+      <td>{{ score.timestamp.strftime('%d %b') }}</td>
+    </tr>
+  {% endfor %}
+</table>

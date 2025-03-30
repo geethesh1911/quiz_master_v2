@@ -17,7 +17,6 @@
         <span class="navbar-toggler-icon"></span>
       </button>
 
-      <!-- Navbar Items -->
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
           <!-- Admin Navigation -->
@@ -33,7 +32,7 @@
               >
             </li>
             <li class="nav-item">
-              <router-link class="nav-link" to="/admin/reports"
+              <router-link class="nav-link" to="/admin-summary"
                 >Reports</router-link
               >
             </li>
@@ -42,17 +41,12 @@
           <!-- Student Navigation -->
           <template v-else-if="userRole === 'student'">
             <li class="nav-item">
-              <router-link class="nav-link" to="/student/dashboard"
+              <router-link class="nav-link" to="/student-dashboard"
                 >Dashboard</router-link
               >
             </li>
             <li class="nav-item">
-              <router-link class="nav-link" to="/student/quizzes"
-                >Available Quizzes</router-link
-              >
-            </li>
-            <li class="nav-item">
-              <router-link class="nav-link" to="/student/results"
+              <router-link class="nav-link" to="/student/analytics"
                 >My Results</router-link
               >
             </li>

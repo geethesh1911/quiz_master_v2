@@ -3,7 +3,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from models import db, User, Subject
 from flask_cors import cross_origin
 import jwt
-
+from datetime import datetime
 auth_bp = Blueprint('auth', __name__)
 
 def is_valid_email(email):
@@ -67,12 +67,20 @@ def login():
     password = data.get('password', '').strip()
 
     user = User.query.filter_by(email=email).first()
+    
     if not user or not check_password_hash(user.password_hash, password):
         return jsonify({'error': 'Invalid credentials'}), 401
 
-    token = jwt.encode({'user_id': user.id, 'role':user.role}, 'geet', algorithm='HS256')
+    user.last_visited_at = datetime.utcnow()
+    db.session.commit()
 
-    return jsonify({'message': 'Login successful', 'role': user.role, "token":token}), 200
+    token = jwt.encode({'user_id': user.id, 'role': user.role}, 'geet', algorithm='HS256')
+
+    return jsonify({
+        'message': 'Login successful',
+        'role': user.role,
+        "token": token
+    }), 200
 
 
 @auth_bp.route('/logout', methods=['POST'])

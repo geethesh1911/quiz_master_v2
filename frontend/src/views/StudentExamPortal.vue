@@ -137,35 +137,20 @@ export default {
         this.loading = true;
         this.error = null;
 
-        const savedState = localStorage.getItem(this.storageKey);
-        if (savedState) {
-          const { questions, answers, currentQuestionIndex, timeLeft } =
-            JSON.parse(savedState);
-
-          if (timeLeft > 0) {
-            this.questions = questions;
-            this.answers = answers;
-            this.currentQuestionIndex = currentQuestionIndex;
-            this.timeLeft = timeLeft;
-            this.selectedAnswer =
-              answers[questions[currentQuestionIndex]?.id] || null;
-            console.log("Restored timeLeft:", this.timeLeft);
-            this.loading = false;
-            return;
-          } else {
-            localStorage.removeItem(this.storageKey);
-          }
-        }
+        // Always clear previous exam state when starting
+        localStorage.removeItem(this.storageKey);
 
         const quizId = this.$route.params.quizId;
         const response = await axios.get(`/student/quizzes/${quizId}/start`, {
           headers: { Authorization: sessionStorage.getItem("token") },
+          params: { t: Date.now() }, // Cache buster
         });
 
         if (!response.data?.questions || !response.data?.duration) {
           throw new Error("Invalid quiz data format from server");
         }
 
+        // Fresh initialization
         this.questions = response.data.questions;
         this.timeLeft = response.data.duration * 60;
         this.answers = this.questions.reduce((acc, q) => {
@@ -173,7 +158,8 @@ export default {
           return acc;
         }, {});
 
-        this.saveExamState();
+        this.currentQuestionIndex = 0;
+        this.selectedAnswer = null;
       } catch (error) {
         console.error("Exam initialization error:", error);
         this.error =

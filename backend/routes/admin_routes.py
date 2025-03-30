@@ -2,7 +2,8 @@ from flask import Blueprint, request, jsonify
 from models import db, User, Subject, Chapter, Quiz, Question
 import jwt
 from functools import wraps
-
+from sqlalchemy import func
+from models import Score
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 ALGORITHM = "HS256"
@@ -231,3 +232,50 @@ def manage_question(question_id):
         db.session.delete(question)
         db.session.commit()
         return jsonify({"message": "Question deleted"}), 200
+
+
+@admin_bp.route("/dashboard-stats", methods=["GET"])
+@admin_required
+def get_dashboard_stats():
+    # Overall Statistics
+    total_students = User.query.filter_by(role='student').count()
+    total_quizzes = Quiz.query.count()
+    total_questions = Question.query.count()
+    
+    # Performance Metrics
+    avg_scores = db.session.query(
+        func.avg(Score.total_scored).label('avg_score'),
+        func.avg(Score.total_scored * 100.0 / Score.total_questions).label('avg_percentage')
+    ).first()
+
+    # Subject Breakdown
+    subject_stats = db.session.query(
+        Subject.name,
+        func.count(Quiz.id).label('quiz_count'),
+        func.avg(Score.total_scored * 100.0 / Score.total_questions).label('avg_score')
+    ).join(Chapter, Subject.id == Chapter.subject_id).join(Quiz, Chapter.id == Quiz.chapter_id).join(Score, Quiz.id == Score.quiz_id).group_by(Subject.name).all()
+
+    # Recent Activity
+    recent_attempts = Score.query.order_by(Score.timestamp.desc()).limit(10).all()
+
+    return jsonify({
+        "overview": {
+            "students": total_students,
+            "quizzes": total_quizzes,
+            "questions": total_questions,
+            "avg_score": round(avg_scores.avg_score, 1) if avg_scores.avg_score else 0,
+            "avg_percentage": round(avg_scores.avg_percentage, 1) if avg_scores.avg_percentage else 0
+        },
+        "subjects": [{
+            "name": sub[0],
+            "quizzes": sub[1],
+            "avg_score": round(sub[2], 1) if sub[2] else 0
+        } for sub in subject_stats],
+        "recent_activity": [{
+            "user_id": ra.user_id,
+            "quiz_id": ra.quiz_id,
+            "score": ra.total_scored,
+            "total": ra.total_questions,
+            "timestamp": ra.timestamp.isoformat()
+        } for ra in recent_attempts]
+    })

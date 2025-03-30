@@ -20,7 +20,7 @@
           <span class="score-value">{{ percentage }}%</span>
         </div>
       </div>
-      <button @click="$router.push('/student/dashboard')" class="return-btn">
+      <button @click="$router.push('/student-dashboard')" class="return-btn">
         Return to Dashboard
       </button>
     </div>

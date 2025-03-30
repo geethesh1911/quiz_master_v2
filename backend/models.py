@@ -1,9 +1,8 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from datetime import datetime
-from sqlalchemy.dialects.postgresql import ARRAY
 
-db = SQLAlchemy() 
+db = SQLAlchemy()
 
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
@@ -12,33 +11,32 @@ class User(db.Model, UserMixin):
     password_hash = db.Column(db.String(100), nullable=False)
     role = db.Column(db.String(20), nullable=False, default='student')
     dob = db.Column(db.Date)
-    scores = db.relationship('Score', backref='user', lazy=True)
-
-
+    scores = db.relationship('Score', back_populates='user', lazy='joined')
+    last_visited_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
 class Subject(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
     description = db.Column(db.Text, nullable=True)
-
-    chapters = db.relationship('Chapter', backref='subject', lazy=True, cascade="all, delete-orphan")
+    chapters = db.relationship('Chapter', back_populates='subject', lazy=True, cascade="all, delete-orphan")
 
 class Chapter(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=True)
     subject_id = db.Column(db.Integer, db.ForeignKey('subject.id'), nullable=False)
-
-    quizzes = db.relationship('Quiz', backref='chapter', lazy=True, cascade="all, delete-orphan")
+    subject = db.relationship('Subject', back_populates='chapters')  # THIS WAS MISSING
+    quizzes = db.relationship('Quiz', back_populates='chapter', lazy=True, cascade="all, delete-orphan")
 
 class Quiz(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     chapter_id = db.Column(db.Integer, db.ForeignKey('chapter.id'), nullable=False)
     date_of_quiz = db.Column(db.Date, default=datetime.utcnow)
-    time_duration = db.Column(db.Integer)  # Changed to store duration in minutes
+    time_duration = db.Column(db.Integer)
     remarks = db.Column(db.Text, nullable=True)
-
-    questions = db.relationship('Question', backref='quiz', lazy=True, cascade="all, delete-orphan")
-    scores = db.relationship('Score', backref='quiz', lazy=True, cascade="all, delete-orphan")
+    chapter = db.relationship('Chapter', back_populates='quizzes', lazy='joined')
+    questions = db.relationship('Question', back_populates='quiz', lazy=True, cascade="all, delete-orphan")
+    scores = db.relationship('Score', back_populates='quiz', lazy=True)
 
 class Question(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -49,13 +47,15 @@ class Question(db.Model):
     option_3 = db.Column(db.String(200), nullable=False)
     option_4 = db.Column(db.String(200), nullable=False)
     correct_option = db.Column(db.Integer, nullable=False)
-    quiz_id = db.Column(db.Integer, db.ForeignKey('quiz.id'), nullable=False) 
-
+    quiz_id = db.Column(db.Integer, db.ForeignKey('quiz.id'), nullable=False)
+    quiz = db.relationship('Quiz', back_populates='questions')
 
 class Score(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     quiz_id = db.Column(db.Integer, db.ForeignKey('quiz.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow) 
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     total_scored = db.Column(db.Integer)
     total_questions = db.Column(db.Integer)
+    quiz = db.relationship('Quiz', back_populates='scores', lazy='joined')
+    user = db.relationship('User', back_populates='scores')

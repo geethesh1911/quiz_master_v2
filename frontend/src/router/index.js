@@ -7,6 +7,7 @@ import StudentDashboard from "@/views/StudentDashboard.vue";
 import MainNavbar from "@/components/MainNavbar.vue";
 import AdminQuizzes from "@/views/AdminQuizzes.vue";
 import StudentExamPortal from "@/views/StudentExamPortal.vue";
+import AdminSummary from "@/views/AdminSummary.vue";
 Vue.use(VueRouter);
 
 Vue.component("MainNavbar", MainNavbar);
@@ -25,6 +26,7 @@ const routes = [
   { path: "/admin-dashboard", component: AdminDashboard },
   { path: "/student-dashboard", component: StudentDashboard },
   { path: "/admin-quizzes", component: AdminQuizzes },
+  { path: "/admin-summary", component: AdminSummary },
   // router.js
   {
     path: "/student/exam/:quizId",
@@ -36,6 +38,12 @@ const routes = [
     path: "/student/quiz-result/:quizId",
     name: "ExamResult",
     component: () => import("@/views/ExamResult.vue"),
+    meta: { requiresAuth: true, role: "student" },
+  },
+  {
+    path: "/student/analytics",
+    name: "StudentAnalytics",
+    component: () => import("@/views/StudentAnalytics.vue"),
     meta: { requiresAuth: true, role: "student" },
   },
 ];
